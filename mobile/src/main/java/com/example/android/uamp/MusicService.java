@@ -39,6 +39,8 @@ import android.support.v7.media.MediaRouter;
 import android.text.TextUtils;
 
 import com.example.android.uamp.model.MusicProvider;
+import com.example.android.uamp.model.YoutubeMusicProvider;
+import com.example.android.uamp.scalised.SecCountManager;
 import com.example.android.uamp.ui.NowPlayingActivity;
 import com.example.android.uamp.utils.CarHelper;
 import com.example.android.uamp.utils.LogHelper;
@@ -196,7 +198,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         LogHelper.d(TAG, "onCreate");
 
         mPlayingQueue = new ArrayList<>();
-        mMusicProvider = new MusicProvider();
+        mMusicProvider = new YoutubeMusicProvider();
         mPackageValidator = new PackageValidator(this);
 
         // Start a new MediaSession
@@ -438,7 +440,11 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         @Override
         public void onSeekTo(long position) {
             LogHelper.d(TAG, "onSeekTo:", position);
+            SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             mPlayback.seekTo((int) position);
+            if (mPlayback.isPlaying()) {
+                SecCountManager.startTracking(mPlayback.getCurrentMediaId(), mPlayback.getCurrentStreamPosition());
+            }
         }
 
         @Override
@@ -485,6 +491,11 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         @Override
         public void onSkipToNext() {
             LogHelper.d(TAG, "skipToNext");
+            goToNext();
+        }
+
+        private void goToNext() {
+            SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             mCurrentIndexOnQueue++;
             if (mPlayingQueue != null && mCurrentIndexOnQueue >= mPlayingQueue.size()) {
                 // This sample's behavior: skipping to next when in last song returns to the
@@ -504,11 +515,12 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         @Override
         public void onSkipToPrevious() {
             LogHelper.d(TAG, "skipToPrevious");
+            SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             mCurrentIndexOnQueue--;
             if (mPlayingQueue != null && mCurrentIndexOnQueue < 0) {
-                // This sample's behavior: skipping to previous when in first song restarts the
-                // first song.
-                mCurrentIndexOnQueue = 0;
+                // This sample's behavior: skipping to previous when in first song it goes to
+                // last song.
+                mCurrentIndexOnQueue = mPlayingQueue.size()-1;
             }
             if (QueueHelper.isIndexPlayable(mCurrentIndexOnQueue, mPlayingQueue)) {
                 handlePlayRequest();
@@ -591,6 +603,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         if (QueueHelper.isIndexPlayable(mCurrentIndexOnQueue, mPlayingQueue)) {
             updateMetadata();
             mPlayback.play(mPlayingQueue.get(mCurrentIndexOnQueue));
+            SecCountManager.startTracking(mPlayback.getCurrentMediaId(), mPlayback.getCurrentStreamPosition());
         }
     }
 
@@ -600,6 +613,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
     private void handlePauseRequest() {
         LogHelper.d(TAG, "handlePauseRequest: mState=" + mPlayback.getState());
         mPlayback.pause();
+        SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
         // reset the delayed stop handler.
         mDelayedStopHandler.removeCallbacksAndMessages(null);
         mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
@@ -610,6 +624,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
      */
     private void handleStopRequest(String withError) {
         LogHelper.d(TAG, "handleStopRequest: mState=" + mPlayback.getState() + " error=", withError);
+        SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
         mPlayback.stop(true);
         // reset the delayed stop handler.
         mDelayedStopHandler.removeCallbacksAndMessages(null);
@@ -663,22 +678,22 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                     MediaMetadata track = mMusicProvider.getMusic(trackId);
                     track = new MediaMetadata.Builder(track)
 
-                        // set high resolution bitmap in METADATA_KEY_ALBUM_ART. This is used, for
-                        // example, on the lockscreen background when the media session is active.
-                        .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, bitmap)
+                            // set high resolution bitmap in METADATA_KEY_ALBUM_ART. This is used, for
+                            // example, on the lockscreen background when the media session is active.
+                            .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, bitmap)
 
-                        // set small version of the album art in the DISPLAY_ICON. This is used on
-                        // the MediaDescription and thus it should be small to be serialized if
-                        // necessary..
-                        .putBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON, icon)
+                                    // set small version of the album art in the DISPLAY_ICON. This is used on
+                                    // the MediaDescription and thus it should be small to be serialized if
+                                    // necessary..
+                            .putBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON, icon)
 
-                        .build();
+                            .build();
 
                     mMusicProvider.updateMusic(trackId, track);
 
                     // If we are still playing the same music
                     String currentPlayingId = MediaIDHelper.extractMusicIDFromMediaID(
-                        queueItem.getDescription().getMediaId());
+                            queueItem.getDescription().getMediaId());
                     if (trackId.equals(currentPlayingId)) {
                         mSession.setMetadata(track);
                     }
@@ -783,6 +798,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
      */
     @Override
     public void onCompletion() {
+        SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
         // The media player finished playing the current song, so we go ahead
         // and start the next.
         if (mPlayingQueue != null && !mPlayingQueue.isEmpty()) {
