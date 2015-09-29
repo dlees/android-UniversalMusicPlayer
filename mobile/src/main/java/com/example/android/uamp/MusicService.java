@@ -38,6 +38,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.media.MediaRouter;
 import android.text.TextUtils;
 
+import com.example.android.uamp.model.LocalMusicProvider;
 import com.example.android.uamp.model.MusicProvider;
 import com.example.android.uamp.model.YoutubeMusicProvider;
 import com.example.android.uamp.scalised.SecCountManager;
@@ -197,8 +198,9 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         super.onCreate();
         LogHelper.d(TAG, "onCreate");
 
+        Context context = getApplicationContext();
         mPlayingQueue = new ArrayList<>();
-        mMusicProvider = new YoutubeMusicProvider();
+        mMusicProvider = new LocalMusicProvider(context);
         mPackageValidator = new PackageValidator(this);
 
         // Start a new MediaSession
@@ -213,7 +215,6 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         mPlayback.setCallback(this);
         mPlayback.start();
 
-        Context context = getApplicationContext();
         Intent intent = new Intent(context, NowPlayingActivity.class);
         PendingIntent pi = PendingIntent.getActivity(context, 99 /*request code*/,
                 intent, PendingIntent.FLAG_UPDATE_CURRENT);
