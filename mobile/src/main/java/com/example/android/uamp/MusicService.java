@@ -155,6 +155,8 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
     private MediaRouter mMediaRouter;
     private PackageValidator mPackageValidator;
 
+    SecCountManager secCountManager;
+
     private boolean mIsConnectedToCar;
     private BroadcastReceiver mCarConnectionReceiver;
 
@@ -199,6 +201,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         LogHelper.d(TAG, "onCreate");
 
         Context context = getApplicationContext();
+        secCountManager = new SecCountManager(context);
         mPlayingQueue = new ArrayList<>();
         mMusicProvider = new LocalMusicProvider(context);
         mPackageValidator = new PackageValidator(this);
@@ -441,10 +444,10 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         @Override
         public void onSeekTo(long position) {
             LogHelper.d(TAG, "onSeekTo:", position);
-            SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
+            secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             mPlayback.seekTo((int) position);
             if (mPlayback.isPlaying()) {
-                SecCountManager.startTracking(mPlayback.getCurrentMediaId(), mPlayback.getCurrentStreamPosition());
+                secCountManager.startTracking(mPlayback.getCurrentMediaId(), mPlayback.getCurrentStreamPosition());
             }
         }
 
@@ -496,7 +499,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         }
 
         private void goToNext() {
-            SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
+            secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             mCurrentIndexOnQueue++;
             if (mPlayingQueue != null && mCurrentIndexOnQueue >= mPlayingQueue.size()) {
                 // This sample's behavior: skipping to next when in last song returns to the
@@ -516,7 +519,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         @Override
         public void onSkipToPrevious() {
             LogHelper.d(TAG, "skipToPrevious");
-            SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
+            secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             mCurrentIndexOnQueue--;
             if (mPlayingQueue != null && mCurrentIndexOnQueue < 0) {
                 // This sample's behavior: skipping to previous when in first song it goes to
@@ -604,7 +607,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         if (QueueHelper.isIndexPlayable(mCurrentIndexOnQueue, mPlayingQueue)) {
             updateMetadata();
             mPlayback.play(mPlayingQueue.get(mCurrentIndexOnQueue));
-            SecCountManager.startTracking(mPlayback.getCurrentMediaId(), mPlayback.getCurrentStreamPosition());
+            secCountManager.startTracking(mPlayback.getCurrentMediaId(), mPlayback.getCurrentStreamPosition());
         }
     }
 
@@ -614,7 +617,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
     private void handlePauseRequest() {
         LogHelper.d(TAG, "handlePauseRequest: mState=" + mPlayback.getState());
         mPlayback.pause();
-        SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
+        secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
         // reset the delayed stop handler.
         mDelayedStopHandler.removeCallbacksAndMessages(null);
         mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
@@ -625,7 +628,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
      */
     private void handleStopRequest(String withError) {
         LogHelper.d(TAG, "handleStopRequest: mState=" + mPlayback.getState() + " error=", withError);
-        SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
+        secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
         mPlayback.stop(true);
         // reset the delayed stop handler.
         mDelayedStopHandler.removeCallbacksAndMessages(null);
@@ -799,7 +802,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
      */
     @Override
     public void onCompletion() {
-        SecCountManager.endTracking(mPlayback.getCurrentStreamPosition());
+        secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
         // The media player finished playing the current song, so we go ahead
         // and start the next.
         if (mPlayingQueue != null && !mPlayingQueue.isEmpty()) {
