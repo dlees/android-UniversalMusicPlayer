@@ -201,7 +201,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         LogHelper.d(TAG, "onCreate");
 
         Context context = getApplicationContext();
-        secCountManager = new SecCountManager(context);
+        secCountManager = new SecCountManager();
         mPlayingQueue = new ArrayList<>();
         mMusicProvider = new LocalMusicProvider(context);
         mPackageValidator = new PackageValidator(this);
@@ -606,6 +606,9 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
 
         if (QueueHelper.isIndexPlayable(mCurrentIndexOnQueue, mPlayingQueue)) {
             updateMetadata();
+            if (mPlayback.isPlaying()) {
+                secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
+            }
             mPlayback.play(mPlayingQueue.get(mCurrentIndexOnQueue));
             secCountManager.startTracking(mPlayback.getCurrentMediaId(), mPlayback.getCurrentStreamPosition());
         }

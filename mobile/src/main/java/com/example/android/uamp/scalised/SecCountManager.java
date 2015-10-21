@@ -1,26 +1,27 @@
 package com.example.android.uamp.scalised;
 
 import android.content.Context;
+import android.os.Environment;
 
 import com.example.android.uamp.utils.LogHelper;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Date;
 
 /**
- * Created by Harvey on 9/27/2015.
+ * Created by Daniel on 9/27/2015.
  */
 public class SecCountManager {
-
-    private Context context;
     private SecCount curSecCount = null;
-
-    public SecCountManager(Context context) {
-        this.context = context;
-    }
 
     public void startTracking(String currentMediaId, int currentStreamPosition) {
         if (curSecCount != null) {
+            LogHelper.e("SEC_COUNT", "We are currently tracking another SECCOUNT");
             throw new IllegalArgumentException("We are currently tracking another Second Count");
         }
 
@@ -32,10 +33,9 @@ public class SecCountManager {
             return;
         }
         curSecCount.endSecCount(currentStreamPosition);
-        curSecCount.writeToFile(context);
+        curSecCount.writeToFile();
         curSecCount = null;
     }
-
 
 }
 
@@ -56,29 +56,41 @@ class SecCount {
         this.endPos = endPos;
         this.endTime = new Date();
     }
+    public File getFile(String fileName) {
+        // Get the directory for the user's public pictures directory.
+        File file = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS), fileName);
+        return file;
+    }
 
-    public void writeToFile(Context context) {
+    public void writeToFile() {
         LogHelper.w("SEC_COUNT", "Log Sec Count: Song: " + songId +
                 " Pos: " + startPos + " - " + endPos +
                 " Time: " + startTime.toString() + " - " + endTime.toString());
 
-        LogHelper.w("Writing to:" + context.getFilesDir().getAbsolutePath());
 
         String filename = "sec_counts.txt";
         FileOutputStream outputStream;
+
+
         try {
-            outputStream = context.openFileOutput(filename, Context.MODE_PRIVATE);
-            outputStream.write((songId + "\n" +
+            FileWriter fileWriter = new FileWriter(getFile("secCount.txt"), true);
+            fileWriter.append((songId + "\n" +
                     startPos + "\n" +
                     endPos + "\n" +
                     startTime.toString() + "\n" +
                     endTime.toString() + "\n" +
-                    "===" + "\n").getBytes());
-            outputStream.close();
+                    "===" + "\n"));
+            fileWriter.close();
 
-        } catch (Exception e) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-            throw new RuntimeException(e);
+            LogHelper.e("SEC_COUNT", "******* File not found. Did you" +
+                    " add a WRITE_EXTERNAL_STORAGE permission to the manifest?");
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
     }
 }
