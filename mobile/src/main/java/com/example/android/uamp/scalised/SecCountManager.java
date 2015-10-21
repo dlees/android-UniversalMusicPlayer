@@ -58,9 +58,11 @@ class SecCount {
     }
 
     public void writeToFile(Context context) {
-        LogHelper.i("SEC_COUNT", "Log Sec Count: Song: " + songId +
+        LogHelper.w("SEC_COUNT", "Log Sec Count: Song: " + songId +
                 " Pos: " + startPos + " - " + endPos +
                 " Time: " + startTime.toString() + " - " + endTime.toString());
+
+        LogHelper.w("Writing to:" + context.getFilesDir().getAbsolutePath());
 
         String filename = "sec_counts.txt";
         FileOutputStream outputStream;
