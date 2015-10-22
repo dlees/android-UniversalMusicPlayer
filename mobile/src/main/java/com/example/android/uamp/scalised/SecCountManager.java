@@ -56,6 +56,7 @@ class SecCount {
         this.endPos = endPos;
         this.endTime = new Date();
     }
+
     public File getFile(String fileName) {
         // Get the directory for the user's public pictures directory.
         File file = new File(Environment.getExternalStoragePublicDirectory(

@@ -40,7 +40,6 @@ import android.text.TextUtils;
 
 import com.example.android.uamp.model.LocalMusicProvider;
 import com.example.android.uamp.model.MusicProvider;
-import com.example.android.uamp.model.YoutubeMusicProvider;
 import com.example.android.uamp.scalised.SecCountManager;
 import com.example.android.uamp.ui.NowPlayingActivity;
 import com.example.android.uamp.utils.CarHelper;
@@ -60,8 +59,9 @@ import java.util.List;
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_GENRE;
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_ROOT;
 import static com.example.android.uamp.utils.MediaIDHelper.createBrowseCategoryMediaID;
+import static com.example.android.uamp.utils.MediaIDHelper.extractMusicIDFromMediaID;
 
-/**
+ /**
  * This class provides a MediaBrowser through a service. It exposes the media library to a browsing
  * client, through the onGetRoot and onLoadChildren methods. It also creates a MediaSession and
  * exposes it through its MediaSession.Token, which allows the client to create a MediaController
@@ -447,7 +447,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
             secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             mPlayback.seekTo((int) position);
             if (mPlayback.isPlaying()) {
-                secCountManager.startTracking(mPlayback.getCurrentMediaId(), mPlayback.getCurrentStreamPosition());
+                secCountManager.startTracking(extractMusicIDFromMediaID(mPlayback.getCurrentMediaId()), mPlayback.getCurrentStreamPosition());
             }
         }
 
@@ -610,7 +610,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                 secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             }
             mPlayback.play(mPlayingQueue.get(mCurrentIndexOnQueue));
-            secCountManager.startTracking(mPlayback.getCurrentMediaId(), mPlayback.getCurrentStreamPosition());
+            secCountManager.startTracking(extractMusicIDFromMediaID(mPlayback.getCurrentMediaId()), mPlayback.getCurrentStreamPosition());
         }
     }
 
@@ -651,7 +651,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
             return;
         }
         MediaSession.QueueItem queueItem = mPlayingQueue.get(mCurrentIndexOnQueue);
-        String musicId = MediaIDHelper.extractMusicIDFromMediaID(
+        String musicId = extractMusicIDFromMediaID(
                 queueItem.getDescription().getMediaId());
         MediaMetadata track = mMusicProvider.getMusic(musicId);
         if (track == null) {
@@ -699,7 +699,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                     mMusicProvider.updateMusic(trackId, track);
 
                     // If we are still playing the same music
-                    String currentPlayingId = MediaIDHelper.extractMusicIDFromMediaID(
+                    String currentPlayingId = extractMusicIDFromMediaID(
                             queueItem.getDescription().getMediaId());
                     if (trackId.equals(currentPlayingId)) {
                         mSession.setMetadata(track);
@@ -794,7 +794,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                 LogHelper.d(TAG, "getCurrentPlayingMusic for musicId=",
                         item.getDescription().getMediaId());
                 return mMusicProvider.getMusic(
-                        MediaIDHelper.extractMusicIDFromMediaID(item.getDescription().getMediaId()));
+                        extractMusicIDFromMediaID(item.getDescription().getMediaId()));
             }
         }
         return null;
