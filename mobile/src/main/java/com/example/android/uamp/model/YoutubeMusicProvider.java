@@ -91,6 +91,11 @@ public class YoutubeMusicProvider implements MusicProvider {
         return mMusicListByGenre.keySet();
     }
 
+    @Override
+    public Iterable<String> getAlbums() {
+        return null;
+    }
+
     /**
      * Get music tracks of the given genre
      *
@@ -101,6 +106,11 @@ public class YoutubeMusicProvider implements MusicProvider {
             return Collections.emptyList();
         }
         return mMusicListByGenre.get(genre);
+    }
+
+    @Override
+    public Iterable<MediaMetadata> getMusicsByAlbum(String album) {
+        return null;
     }
 
     /**

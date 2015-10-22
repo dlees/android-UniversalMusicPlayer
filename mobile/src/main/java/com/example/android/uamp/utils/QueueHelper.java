@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_ALBUM;
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_GENRE;
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_SEARCH;
 
@@ -54,9 +55,12 @@ public class QueueHelper {
         LogHelper.d(TAG, "Creating playing queue for ", categoryType, ",  ", categoryValue);
 
         Iterable<MediaMetadata> tracks = null;
-        // This sample only supports genre and by_search category types.
         if (categoryType.equals(MEDIA_ID_MUSICS_BY_GENRE)) {
             tracks = musicProvider.getMusicsByGenre(categoryValue);
+
+        } else if (categoryType.equals(MEDIA_ID_MUSICS_BY_ALBUM)) {
+            tracks = musicProvider.getMusicsByAlbum(categoryValue);
+
         } else if (categoryType.equals(MEDIA_ID_MUSICS_BY_SEARCH)) {
             tracks = musicProvider.searchMusicBySongTitle(categoryValue);
         }

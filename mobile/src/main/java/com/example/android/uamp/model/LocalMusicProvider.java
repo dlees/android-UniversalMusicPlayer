@@ -25,11 +25,13 @@ public class LocalMusicProvider implements MusicProvider {
 
     private final Context context;
     private Map<String, List<MediaMetadata>> mMusicListByGenre;
+    private Map<String, List<MediaMetadata>> mMusicListByAlbum;
     private final Map<String, MediaMetadata> mMusicListById;
     private final Set<String> mFavoriteTracks;
 
     public LocalMusicProvider(Context context) {
         mMusicListByGenre = new HashMap<>();
+        mMusicListByAlbum = new HashMap<>();
         mMusicListById = new HashMap<>();
         mFavoriteTracks = Collections.newSetFromMap(new HashMap<String, Boolean>());
         this.context = context;
@@ -48,15 +50,14 @@ public class LocalMusicProvider implements MusicProvider {
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 do {
-                    String song_name = cursor
-                            .getString(cursor
-                                    .getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME));
+                    String song_name = cursor.getString(
+                            cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME));
+
                     int song_id = cursor.getInt(cursor
                             .getColumnIndex(MediaStore.Audio.Media._ID));
 
                     String fullpath = cursor.getString(cursor
                             .getColumnIndex(MediaStore.Audio.Media.DATA));
-
 
                     String album_name = cursor.getString(cursor
                             .getColumnIndex(MediaStore.Audio.Media.ALBUM));
@@ -68,17 +69,18 @@ public class LocalMusicProvider implements MusicProvider {
                     int artist_id = cursor.getInt(cursor
                             .getColumnIndex(MediaStore.Audio.Media.ARTIST_ID));
 
-                    String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
+                    String mediaID = fullpath.replace("/storage/emulated/0/Music/","");
 
+                            String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
                     MediaMetadata metadata = new MediaMetadata.Builder()
-                            .putString(MediaMetadata.METADATA_KEY_MEDIA_ID, song_name)
+                            .putString(MediaMetadata.METADATA_KEY_MEDIA_ID, mediaID)
                             .putString(CUSTOM_METADATA_TRACK_SOURCE, data)
-                                    .putString(MediaMetadata.METADATA_KEY_ALBUM, album_name)
-                                    .putString(MediaMetadata.METADATA_KEY_ARTIST, artist_name)
-                                    .putLong(MediaMetadata.METADATA_KEY_DURATION, cursor.getColumnIndex(MediaStore.Audio.Media.DURATION))
-                                    .putString(MediaMetadata.METADATA_KEY_GENRE, "Country")
-                                    .putString(MediaMetadata.METADATA_KEY_TITLE, song_name)
-                                    .putLong(MediaMetadata.METADATA_KEY_TRACK_NUMBER, cursor.getColumnIndex(MediaStore.Audio.Media.TRACK))
+                            .putString(MediaMetadata.METADATA_KEY_ALBUM, album_name)
+                            .putString(MediaMetadata.METADATA_KEY_ARTIST, artist_name)
+                            .putLong(MediaMetadata.METADATA_KEY_DURATION, cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION)))
+                            .putString(MediaMetadata.METADATA_KEY_GENRE, "Country")
+                            .putString(MediaMetadata.METADATA_KEY_TITLE, song_name)
+                            .putLong(MediaMetadata.METADATA_KEY_TRACK_NUMBER, cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.TRACK)))
                                     .build();
 
                     if (!mMusicListByGenre.containsKey(artist_name)) {
@@ -86,7 +88,12 @@ public class LocalMusicProvider implements MusicProvider {
                     }
                     mMusicListByGenre.get(artist_name).add(metadata);
 
-                    mMusicListById.put(song_name, metadata);
+                    if (!mMusicListByAlbum.containsKey(album_name)) {
+                        mMusicListByAlbum.put(album_name, new ArrayList<MediaMetadata>());
+                    }
+                    mMusicListByAlbum.get(album_name).add(metadata);
+
+                    mMusicListById.put(mediaID, metadata);
 
                 } while (cursor.moveToNext());
 
@@ -113,6 +120,24 @@ public class LocalMusicProvider implements MusicProvider {
         return mMusicListByGenre.get(genre);
     }
 
+
+    @Override
+    public Iterable<String> getAlbums() {
+        return mMusicListByAlbum.keySet();
+
+    }
+
+    /**
+     * Get music tracks of the given album
+     *
+     */
+    @Override
+    public Iterable<MediaMetadata> getMusicsByAlbum(String album) {
+        if (!mMusicListByAlbum.containsKey(album)) {
+            return Collections.emptyList();
+        }
+        return mMusicListByAlbum.get(album);
+    }
     /**
      * Very basic implementation of a search that filter music tracks with title containing
      * the given query.

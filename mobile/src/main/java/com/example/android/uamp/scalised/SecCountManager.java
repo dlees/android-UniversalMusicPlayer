@@ -1,6 +1,7 @@
 package com.example.android.uamp.scalised;
 
 import android.content.Context;
+import android.media.MediaMetadata;
 import android.os.Environment;
 
 import com.example.android.uamp.utils.LogHelper;
@@ -19,13 +20,13 @@ import java.util.Date;
 public class SecCountManager {
     private SecCount curSecCount = null;
 
-    public void startTracking(String currentMediaId, int currentStreamPosition) {
+    public void startTracking(MediaMetadata mediaMetadata, int currentStreamPosition) {
         if (curSecCount != null) {
-            LogHelper.e("SEC_COUNT", "We are currently tracking another SECCOUNT");
+            LogHelper.e("SEC_COUNT", "We are currently tracking another SEC_COUNT");
             throw new IllegalArgumentException("We are currently tracking another Second Count");
         }
 
-        curSecCount = new SecCount(currentMediaId, currentStreamPosition);
+        curSecCount = new SecCount(mediaMetadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID), currentStreamPosition);
     }
 
     public void endTracking(int currentStreamPosition) {

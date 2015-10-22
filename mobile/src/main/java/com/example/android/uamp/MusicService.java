@@ -57,6 +57,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_GENRE;
+import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_ALBUM;
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_ROOT;
 import static com.example.android.uamp.utils.MediaIDHelper.createBrowseCategoryMediaID;
 import static com.example.android.uamp.utils.MediaIDHelper.extractMusicIDFromMediaID;
@@ -365,12 +366,21 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
             LogHelper.d(TAG, "OnLoadChildren.ROOT");
             mediaItems.add(new MediaBrowser.MediaItem(
                     new MediaDescription.Builder()
-                        .setMediaId(MEDIA_ID_MUSICS_BY_GENRE)
-                        .setTitle(getString(R.string.browse_genres))
-                        .setIconUri(Uri.parse("android.resource://" +
-                                "com.example.android.uamp/drawable/ic_by_genre"))
-                        .setSubtitle(getString(R.string.browse_genre_subtitle))
-                        .build(), MediaBrowser.MediaItem.FLAG_BROWSABLE
+                            .setMediaId(MEDIA_ID_MUSICS_BY_GENRE)
+                            .setTitle(getString(R.string.browse_genres))
+                            .setIconUri(Uri.parse("android.resource://" +
+                                    "com.example.android.uamp/drawable/ic_by_genre"))
+                            .setSubtitle(getString(R.string.browse_genre_subtitle))
+                            .build(), MediaBrowser.MediaItem.FLAG_BROWSABLE
+            ));
+            mediaItems.add(new MediaBrowser.MediaItem(
+                    new MediaDescription.Builder()
+                            .setMediaId(MEDIA_ID_MUSICS_BY_ALBUM)
+                            .setTitle(getString(R.string.browse_albums))
+                            .setIconUri(Uri.parse("android.resource://" +
+                                    "com.example.android.uamp/drawable/ic_by_genre"))
+                            .setSubtitle(getString(R.string.browse_album_subtitle))
+                            .build(), MediaBrowser.MediaItem.FLAG_BROWSABLE
             ));
 
         } else if (MEDIA_ID_MUSICS_BY_GENRE.equals(parentMediaId)) {
@@ -382,6 +392,19 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                         .setTitle(genre)
                         .setSubtitle(getString(R.string.browse_musics_by_genre_subtitle, genre))
                         .build(), MediaBrowser.MediaItem.FLAG_BROWSABLE
+                );
+                mediaItems.add(item);
+            }
+
+        } else if (MEDIA_ID_MUSICS_BY_ALBUM.equals(parentMediaId)) {
+            LogHelper.d(TAG, "OnLoadChildren.ALBUMS");
+            for (String album : mMusicProvider.getAlbums()) {
+                MediaBrowser.MediaItem item = new MediaBrowser.MediaItem(
+                        new MediaDescription.Builder()
+                                .setMediaId(createBrowseCategoryMediaID(MEDIA_ID_MUSICS_BY_ALBUM, album))
+                                .setTitle(album)
+                                .setSubtitle(getString(R.string.browse_musics_by_album_subtitle, album))
+                                .build(), MediaBrowser.MediaItem.FLAG_BROWSABLE
                 );
                 mediaItems.add(item);
             }
@@ -403,6 +426,25 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                         trackCopy.getDescription(), MediaItem.FLAG_PLAYABLE);
                 mediaItems.add(bItem);
             }
+
+        } else if (parentMediaId.startsWith(MEDIA_ID_MUSICS_BY_ALBUM)) {
+            String album = MediaIDHelper.getHierarchy(parentMediaId)[1];
+            LogHelper.d(TAG, "OnLoadChildren.SONGS_BY_Album  album=", album);
+            for (MediaMetadata track : mMusicProvider.getMusicsByAlbum(album)) {
+                // Since mediaMetadata fields are immutable, we need to create a copy, so we
+                // can set a hierarchy-aware mediaID. We will need to know the media hierarchy
+                // when we get a onPlayFromMusicID call, so we can create the proper queue based
+                // on where the music was selected from (by artist, by album, random, etc)
+                String hierarchyAwareMediaID = MediaIDHelper.createMediaID(
+                        track.getDescription().getMediaId(), MEDIA_ID_MUSICS_BY_ALBUM, album);
+                MediaMetadata trackCopy = new MediaMetadata.Builder(track)
+                        .putString(MediaMetadata.METADATA_KEY_MEDIA_ID, hierarchyAwareMediaID)
+                        .build();
+                MediaBrowser.MediaItem bItem = new MediaBrowser.MediaItem(
+                        trackCopy.getDescription(), MediaItem.FLAG_PLAYABLE);
+                mediaItems.add(bItem);
+            }
+
         } else {
             LogHelper.w(TAG, "Skipping unmatched parentMediaId: ", parentMediaId);
         }
@@ -447,7 +489,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
             secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             mPlayback.seekTo((int) position);
             if (mPlayback.isPlaying()) {
-                secCountManager.startTracking(extractMusicIDFromMediaID(mPlayback.getCurrentMediaId()), mPlayback.getCurrentStreamPosition());
+                secCountManager.startTracking(getCurrentMediaMetadata(), mPlayback.getCurrentStreamPosition());
             }
         }
 
@@ -610,11 +652,15 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                 secCountManager.endTracking(mPlayback.getCurrentStreamPosition());
             }
             mPlayback.play(mPlayingQueue.get(mCurrentIndexOnQueue));
-            secCountManager.startTracking(extractMusicIDFromMediaID(mPlayback.getCurrentMediaId()), mPlayback.getCurrentStreamPosition());
+            secCountManager.startTracking(getCurrentMediaMetadata(), mPlayback.getCurrentStreamPosition());
         }
     }
 
-    /**
+     private MediaMetadata getCurrentMediaMetadata() {
+         return mMusicProvider.getMusic(extractMusicIDFromMediaID(mPlayback.getCurrentMediaId()));
+     }
+
+     /**
      * Handle a request to pause music
      */
     private void handlePauseRequest() {
