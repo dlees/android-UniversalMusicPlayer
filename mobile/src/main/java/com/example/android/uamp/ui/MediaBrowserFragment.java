@@ -68,6 +68,7 @@ public class MediaBrowserFragment extends Fragment {
         private boolean oldOnline = false;
         @Override
         public void onReceive(Context context, Intent intent) {
+            /*
             // We don't care about network changes while this fragment is not associated
             // with a media ID (for example, while it is being initialized)
             if (mMediaId != null) {
@@ -80,6 +81,7 @@ public class MediaBrowserFragment extends Fragment {
                     }
                 }
             }
+            */
         }
     };
 
@@ -253,11 +255,11 @@ public class MediaBrowserFragment extends Fragment {
     private void checkForUserVisibleErrors(boolean forceError) {
         boolean showError = forceError;
         // If offline, message is about the lack of connectivity:
-        if (!NetworkHelper.isOnline(getActivity())) {
+/*        if (!NetworkHelper.isOnline(getActivity())) {
             mErrorMessage.setText(R.string.error_no_connection);
             showError = true;
         } else {
-            // otherwise, if state is ERROR and metadata!=null, use playback state error message:
+  */          // otherwise, if state is ERROR and metadata!=null, use playback state error message:
             MediaController controller = getActivity().getMediaController();
             if (controller != null
                 && controller.getMetadata() != null
@@ -271,7 +273,7 @@ public class MediaBrowserFragment extends Fragment {
                 mErrorMessage.setText(R.string.error_loading_media);
                 showError = true;
             }
-        }
+ //       }
         mErrorView.setVisibility(showError ? View.VISIBLE : View.GONE);
         LogHelper.d(TAG, "checkForUserVisibleErrors. forceError=", forceError,
             " showError=", showError,
