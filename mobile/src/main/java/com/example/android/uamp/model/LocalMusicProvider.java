@@ -103,7 +103,9 @@ public class LocalMusicProvider implements MusicProvider {
 
     @Override
     public Iterable<String> getGenres() {
-        return musicListByArtist.keySet();
+        List<String> artists = new ArrayList<>(musicListByArtist.keySet());
+        Collections.sort(artists);
+        return artists;
 
     }
 
