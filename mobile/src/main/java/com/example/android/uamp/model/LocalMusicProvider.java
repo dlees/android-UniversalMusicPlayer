@@ -5,7 +5,6 @@ import android.database.Cursor;
 import android.media.MediaMetadata;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.util.Log;
 
 import com.example.android.uamp.utils.LogHelper;
 
@@ -24,13 +23,13 @@ public class LocalMusicProvider implements MusicProvider {
     private static final String TAG = LogHelper.makeLogTag(LocalMusicProvider.class);
 
     private final Context context;
-    private Map<String, List<MediaMetadata>> mMusicListByGenre;
+    private Map<String, List<MediaMetadata>> musicListByArtist;
     private Map<String, List<MediaMetadata>> mMusicListByAlbum;
     private final Map<String, MediaMetadata> mMusicListById;
     private final Set<String> mFavoriteTracks;
 
     public LocalMusicProvider(Context context) {
-        mMusicListByGenre = new HashMap<>();
+        musicListByArtist = new HashMap<>();
         mMusicListByAlbum = new HashMap<>();
         mMusicListById = new HashMap<>();
         mFavoriteTracks = Collections.newSetFromMap(new HashMap<String, Boolean>());
@@ -83,10 +82,10 @@ public class LocalMusicProvider implements MusicProvider {
                             .putLong(MediaMetadata.METADATA_KEY_TRACK_NUMBER, cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.TRACK)))
                                     .build();
 
-                    if (!mMusicListByGenre.containsKey(artist_name)) {
-                        mMusicListByGenre.put(artist_name, new ArrayList<MediaMetadata>());
+                    if (!musicListByArtist.containsKey(artist_name)) {
+                        musicListByArtist.put(artist_name, new ArrayList<MediaMetadata>());
                     }
-                    mMusicListByGenre.get(artist_name).add(metadata);
+                    musicListByArtist.get(artist_name).add(metadata);
 
                     if (!mMusicListByAlbum.containsKey(album_name)) {
                         mMusicListByAlbum.put(album_name, new ArrayList<MediaMetadata>());
@@ -104,7 +103,7 @@ public class LocalMusicProvider implements MusicProvider {
 
     @Override
     public Iterable<String> getGenres() {
-        return mMusicListByGenre.keySet();
+        return musicListByArtist.keySet();
 
     }
 
@@ -114,10 +113,10 @@ public class LocalMusicProvider implements MusicProvider {
      */
     @Override
     public Iterable<MediaMetadata> getMusicsByGenre(String genre) {
-        if (!mMusicListByGenre.containsKey(genre)) {
+        if (!musicListByArtist.containsKey(genre)) {
             return Collections.emptyList();
         }
-        return mMusicListByGenre.get(genre);
+        return musicListByArtist.get(genre);
     }
 
 

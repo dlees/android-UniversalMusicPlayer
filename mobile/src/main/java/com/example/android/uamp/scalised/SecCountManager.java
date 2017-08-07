@@ -70,11 +70,6 @@ class SecCount {
                 " Pos: " + startPos + " - " + endPos +
                 " Time: " + startTime.toString() + " - " + endTime.toString());
 
-
-        String filename = "sec_counts.txt";
-        FileOutputStream outputStream;
-
-
         try {
             FileWriter fileWriter = new FileWriter(getFile("secCount.txt"), true);
             fileWriter.append((songId + "\n" +
