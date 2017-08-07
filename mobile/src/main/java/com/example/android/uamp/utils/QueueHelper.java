@@ -56,7 +56,7 @@ public class QueueHelper {
 
         Iterable<MediaMetadata> tracks = null;
         if (categoryType.equals(MEDIA_ID_MUSICS_BY_GENRE)) {
-            tracks = musicProvider.getMusicsByGenre(categoryValue);
+            tracks = musicProvider.getMusicsByArtist(categoryValue);
 
         } else if (categoryType.equals(MEDIA_ID_MUSICS_BY_ALBUM)) {
             tracks = musicProvider.getMusicsByAlbum(categoryValue);
@@ -93,7 +93,7 @@ public class QueueHelper {
         if (params.isAlbumFocus) {
             result = musicProvider.searchMusicByAlbum(params.album);
         } else if (params.isGenreFocus) {
-            result = musicProvider.getMusicsByGenre(params.genre);
+            result = musicProvider.getMusicsByArtist(params.genre);
         } else if (params.isArtistFocus) {
             result = musicProvider.searchMusicByArtist(params.artist);
         } else if (params.isSongFocus) {
@@ -173,8 +173,8 @@ public class QueueHelper {
     public static List<MediaSession.QueueItem> getRandomQueue(MusicProvider musicProvider) {
         List<MediaMetadata> result = new ArrayList<>();
 
-        for (String genre: musicProvider.getGenres()) {
-            Iterable<MediaMetadata> tracks = musicProvider.getMusicsByGenre(genre);
+        for (String genre: musicProvider.getArtists()) {
+            Iterable<MediaMetadata> tracks = musicProvider.getMusicsByArtist(genre);
             for (MediaMetadata track: tracks) {
                 if (ThreadLocalRandom.current().nextBoolean()) {
                     result.add(track);

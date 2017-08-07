@@ -84,7 +84,7 @@ public class YoutubeMusicProvider implements MusicProvider {
      * @return genres
      */
     @Override
-    public Iterable<String> getGenres() {
+    public Iterable<String> getArtists() {
         if (mCurrentState != State.INITIALIZED) {
             return Collections.emptyList();
         }
@@ -101,7 +101,7 @@ public class YoutubeMusicProvider implements MusicProvider {
      *
      */
     @Override
-    public Iterable<MediaMetadata> getMusicsByGenre(String genre) {
+    public Iterable<MediaMetadata> getMusicsByArtist(String genre) {
         if (mCurrentState != State.INITIALIZED || !mMusicListByGenre.containsKey(genre)) {
             return Collections.emptyList();
         }

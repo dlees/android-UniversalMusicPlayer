@@ -9,10 +9,10 @@ public interface MusicProvider {
 
     public final String CUSTOM_METADATA_TRACK_SOURCE = "__SOURCE__";
 
-    Iterable<String> getGenres();
+    Iterable<String> getArtists();
     Iterable<String> getAlbums();
 
-    Iterable<MediaMetadata> getMusicsByGenre(String genre);
+    Iterable<MediaMetadata> getMusicsByArtist(String genre);
     Iterable<MediaMetadata> getMusicsByAlbum(String album);
 
     Iterable<MediaMetadata> searchMusicBySongTitle(String query);

@@ -5,6 +5,7 @@ import android.database.Cursor;
 import android.media.MediaMetadata;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 
 import com.example.android.uamp.utils.LogHelper;
 
@@ -24,13 +25,13 @@ public class LocalMusicProvider implements MusicProvider {
 
     private final Context context;
     private Map<String, List<MediaMetadata>> musicListByArtist;
-    private Map<String, List<MediaMetadata>> mMusicListByAlbum;
+    private Map<String, List<MediaMetadata>> musicListByAlbum;
     private final Map<String, MediaMetadata> mMusicListById;
     private final Set<String> mFavoriteTracks;
 
     public LocalMusicProvider(Context context) {
         musicListByArtist = new HashMap<>();
-        mMusicListByAlbum = new HashMap<>();
+        musicListByAlbum = new HashMap<>();
         mMusicListById = new HashMap<>();
         mFavoriteTracks = Collections.newSetFromMap(new HashMap<String, Boolean>());
         this.context = context;
@@ -87,10 +88,10 @@ public class LocalMusicProvider implements MusicProvider {
                     }
                     musicListByArtist.get(artist_name).add(metadata);
 
-                    if (!mMusicListByAlbum.containsKey(album_name)) {
-                        mMusicListByAlbum.put(album_name, new ArrayList<MediaMetadata>());
+                    if (!musicListByAlbum.containsKey(album_name)) {
+                        musicListByAlbum.put(album_name, new ArrayList<MediaMetadata>());
                     }
-                    mMusicListByAlbum.get(album_name).add(metadata);
+                    musicListByAlbum.get(album_name).add(metadata);
 
                     mMusicListById.put(mediaID, metadata);
 
@@ -102,11 +103,16 @@ public class LocalMusicProvider implements MusicProvider {
     }
 
     @Override
-    public Iterable<String> getGenres() {
-        List<String> artists = new ArrayList<>(musicListByArtist.keySet());
+    public Iterable<String> getArtists() {
+        return sortSet(musicListByArtist.keySet());
+
+    }
+
+    @NonNull
+    private Iterable<String> sortSet(Set<String> set) {
+        List<String> artists = new ArrayList<>(set);
         Collections.sort(artists);
         return artists;
-
     }
 
     /**
@@ -114,17 +120,17 @@ public class LocalMusicProvider implements MusicProvider {
      *
      */
     @Override
-    public Iterable<MediaMetadata> getMusicsByGenre(String genre) {
-        if (!musicListByArtist.containsKey(genre)) {
+    public Iterable<MediaMetadata> getMusicsByArtist(String artist) {
+        if (!musicListByArtist.containsKey(artist)) {
             return Collections.emptyList();
         }
-        return musicListByArtist.get(genre);
+        return musicListByArtist.get(artist);
     }
 
 
     @Override
     public Iterable<String> getAlbums() {
-        return mMusicListByAlbum.keySet();
+        return sortSet(musicListByAlbum.keySet());
 
     }
 
@@ -134,10 +140,10 @@ public class LocalMusicProvider implements MusicProvider {
      */
     @Override
     public Iterable<MediaMetadata> getMusicsByAlbum(String album) {
-        if (!mMusicListByAlbum.containsKey(album)) {
+        if (!musicListByAlbum.containsKey(album)) {
             return Collections.emptyList();
         }
-        return mMusicListByAlbum.get(album);
+        return musicListByAlbum.get(album);
     }
     /**
      * Very basic implementation of a search that filter music tracks with title containing
