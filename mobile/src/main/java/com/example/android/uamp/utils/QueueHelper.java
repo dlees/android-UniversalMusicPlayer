@@ -22,6 +22,7 @@ import android.os.Bundle;
 
 import com.example.android.uamp.VoiceSearchParams;
 import com.example.android.uamp.model.MusicProvider;
+import com.example.android.uamp.scalised.PlaylistLoader;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_ALBUM;
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_GENRE;
+import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_PLAYLIST;
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_SEARCH;
 
 /**
@@ -40,7 +42,7 @@ public class QueueHelper {
     private static final String TAG = LogHelper.makeLogTag(QueueHelper.class);
 
     public static List<MediaSession.QueueItem> getPlayingQueue(String mediaId,
-            MusicProvider musicProvider) {
+                                                               MusicProvider musicProvider, PlaylistLoader playlistProvider) {
 
         // extract the browsing hierarchy from the media ID:
         String[] hierarchy = MediaIDHelper.getHierarchy(mediaId);
@@ -63,6 +65,10 @@ public class QueueHelper {
 
         } else if (categoryType.equals(MEDIA_ID_MUSICS_BY_SEARCH)) {
             tracks = musicProvider.searchMusicBySongTitle(categoryValue);
+
+        } else if (categoryType.equals(MEDIA_ID_MUSICS_BY_PLAYLIST)) {
+            tracks = playlistProvider.getSongsInPlaylist(categoryValue);
+
         }
 
         if (tracks == null) {
@@ -96,6 +102,8 @@ public class QueueHelper {
             result = musicProvider.getMusicsByArtist(params.genre);
         } else if (params.isArtistFocus) {
             result = musicProvider.searchMusicByArtist(params.artist);
+        } else if (params.isPlaylistFocus) {
+            result = musicProvider.searchMusicByArtist(params.playlist);
         } else if (params.isSongFocus) {
             result = musicProvider.searchMusicBySongTitle(params.song);
         }

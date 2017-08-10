@@ -40,7 +40,9 @@ import android.text.TextUtils;
 
 import com.example.android.uamp.model.LocalMusicProvider;
 import com.example.android.uamp.model.MusicProvider;
+import com.example.android.uamp.scalised.PlaylistLoader;
 import com.example.android.uamp.scalised.SecCountManager;
+import com.example.android.uamp.scalised.TextFilePlaylistLoader;
 import com.example.android.uamp.ui.NowPlayingActivity;
 import com.example.android.uamp.utils.CarHelper;
 import com.example.android.uamp.utils.LogHelper;
@@ -58,6 +60,7 @@ import java.util.List;
 
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_GENRE;
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_ALBUM;
+import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_MUSICS_BY_PLAYLIST;
 import static com.example.android.uamp.utils.MediaIDHelper.MEDIA_ID_ROOT;
 import static com.example.android.uamp.utils.MediaIDHelper.createBrowseCategoryMediaID;
 import static com.example.android.uamp.utils.MediaIDHelper.extractMusicIDFromMediaID;
@@ -191,11 +194,12 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
     };
 
     private VideoCastManager mCastManager;
+    private PlaylistLoader playlistProvider;
 
-    /*
-     * (non-Javadoc)
-     * @see android.app.Service#onCreate()
-     */
+     /*
+      * (non-Javadoc)
+      * @see android.app.Service#onCreate()
+      */
     @Override
     public void onCreate() {
         super.onCreate();
@@ -205,6 +209,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
         secCountManager = new SecCountManager();
         mPlayingQueue = new ArrayList<>();
         mMusicProvider = new LocalMusicProvider(context);
+        playlistProvider = new TextFilePlaylistLoader(mMusicProvider);
         mPackageValidator = new PackageValidator(this);
 
         // Start a new MediaSession
@@ -382,6 +387,15 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                             .setSubtitle(getString(R.string.browse_album_subtitle))
                             .build(), MediaBrowser.MediaItem.FLAG_BROWSABLE
             ));
+            mediaItems.add(new MediaBrowser.MediaItem(
+                    new MediaDescription.Builder()
+                            .setMediaId(MEDIA_ID_MUSICS_BY_PLAYLIST)
+                            .setTitle(getString(R.string.browse_playlists))
+                            .setIconUri(Uri.parse("android.resource://" +
+                                    "com.example.android.uamp/drawable/ic_by_genre"))
+                            .setSubtitle(getString(R.string.browse_playlists_subtitle))
+                            .build(), MediaBrowser.MediaItem.FLAG_BROWSABLE
+            ));
 
         } else if (MEDIA_ID_MUSICS_BY_GENRE.equals(parentMediaId)) {
             LogHelper.d(TAG, "OnLoadChildren.GENRES");
@@ -404,6 +418,19 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                                 .setMediaId(createBrowseCategoryMediaID(MEDIA_ID_MUSICS_BY_ALBUM, album))
                                 .setTitle(album)
                                 .setSubtitle(getString(R.string.browse_musics_by_album_subtitle, album))
+                                .build(), MediaBrowser.MediaItem.FLAG_BROWSABLE
+                );
+                mediaItems.add(item);
+            }
+
+        } else if (MEDIA_ID_MUSICS_BY_PLAYLIST.equals(parentMediaId)) {
+            LogHelper.d(TAG, "OnLoadChildren.GENRES");
+            for (String playlist : playlistProvider.getPlaylists()) {
+                MediaBrowser.MediaItem item = new MediaBrowser.MediaItem(
+                        new MediaDescription.Builder()
+                                .setMediaId(createBrowseCategoryMediaID(MEDIA_ID_MUSICS_BY_PLAYLIST, playlist))
+                                .setTitle(playlist)
+                                .setSubtitle(getString(R.string.browse_musics_by_playlists_subtitle, playlist))
                                 .build(), MediaBrowser.MediaItem.FLAG_BROWSABLE
                 );
                 mediaItems.add(item);
@@ -437,6 +464,24 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
                 // on where the music was selected from (by artist, by album, random, etc)
                 String hierarchyAwareMediaID = MediaIDHelper.createMediaID(
                         track.getDescription().getMediaId(), MEDIA_ID_MUSICS_BY_ALBUM, album);
+                MediaMetadata trackCopy = new MediaMetadata.Builder(track)
+                        .putString(MediaMetadata.METADATA_KEY_MEDIA_ID, hierarchyAwareMediaID)
+                        .build();
+                MediaBrowser.MediaItem bItem = new MediaBrowser.MediaItem(
+                        trackCopy.getDescription(), MediaItem.FLAG_PLAYABLE);
+                mediaItems.add(bItem);
+            }
+
+        } else if (parentMediaId.startsWith(MEDIA_ID_MUSICS_BY_PLAYLIST)) {
+            String playlist = MediaIDHelper.getHierarchy(parentMediaId)[1];
+            LogHelper.d(TAG, "OnLoadChildren.SONGS_BY_Playlist  playlist=", playlist);
+            for (MediaMetadata track : playlistProvider.getSongsInPlaylist(playlist)) {
+                // Since mediaMetadata fields are immutable, we need to create a copy, so we
+                // can set a hierarchy-aware mediaID. We will need to know the media hierarchy
+                // when we get a onPlayFromMusicID call, so we can create the proper queue based
+                // on where the music was selected from (by artist, by album, random, etc)
+                String hierarchyAwareMediaID = MediaIDHelper.createMediaID(
+                        track.getDescription().getMediaId(), MEDIA_ID_MUSICS_BY_PLAYLIST, playlist);
                 MediaMetadata trackCopy = new MediaMetadata.Builder(track)
                         .putString(MediaMetadata.METADATA_KEY_MEDIA_ID, hierarchyAwareMediaID)
                         .build();
@@ -502,7 +547,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
             // the hierarchy in MediaBrowser and the actual unique musicID. This is necessary
             // so we can build the correct playing queue, based on where the track was
             // selected from.
-            mPlayingQueue = QueueHelper.getPlayingQueue(mediaId, mMusicProvider);
+            mPlayingQueue = QueueHelper.getPlayingQueue(mediaId, mMusicProvider, playlistProvider);
             mSession.setQueue(mPlayingQueue);
             String queueTitle = getString(R.string.browse_musics_by_genre_subtitle,
                     MediaIDHelper.extractBrowseCategoryValueFromMediaID(mediaId));
@@ -880,7 +925,7 @@ public class MusicService extends MediaBrowserService implements Playback.Callba
     @Override
     public void onMetadataChanged(String mediaId) {
         LogHelper.d(TAG, "onMetadataChanged", mediaId);
-        List<MediaSession.QueueItem> queue = QueueHelper.getPlayingQueue(mediaId, mMusicProvider);
+        List<MediaSession.QueueItem> queue = QueueHelper.getPlayingQueue(mediaId, mMusicProvider, playlistProvider);
         int index = QueueHelper.getMusicIndexOnQueue(queue, mediaId);
         if (index > -1) {
             mCurrentIndexOnQueue = index;

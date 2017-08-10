@@ -30,10 +30,12 @@ public final class VoiceSearchParams {
     public boolean isUnstructured;
     public boolean isGenreFocus;
     public boolean isArtistFocus;
+    public boolean isPlaylistFocus;
     public boolean isAlbumFocus;
     public boolean isSongFocus;
     public String genre;
     public String artist;
+    public String playlist;
     public String album;
     public String song;
 

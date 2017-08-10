@@ -26,13 +26,13 @@ public class LocalMusicProvider implements MusicProvider {
     private final Context context;
     private Map<String, List<MediaMetadata>> musicListByArtist;
     private Map<String, List<MediaMetadata>> musicListByAlbum;
-    private final Map<String, MediaMetadata> mMusicListById;
+    private final Map<String, MediaMetadata> mMusicListByMediaId; // MediaId is the path starting at the Music Directory
     private final Set<String> mFavoriteTracks;
 
     public LocalMusicProvider(Context context) {
         musicListByArtist = new HashMap<>();
         musicListByAlbum = new HashMap<>();
-        mMusicListById = new HashMap<>();
+        mMusicListByMediaId = new HashMap<>();
         mFavoriteTracks = Collections.newSetFromMap(new HashMap<String, Boolean>());
         this.context = context;
 
@@ -93,7 +93,7 @@ public class LocalMusicProvider implements MusicProvider {
                     }
                     musicListByAlbum.get(album_name).add(metadata);
 
-                    mMusicListById.put(mediaID, metadata);
+                    mMusicListByMediaId.put(mediaID, metadata);
 
                 } while (cursor.moveToNext());
 
@@ -178,7 +178,7 @@ public class LocalMusicProvider implements MusicProvider {
     Iterable<MediaMetadata> searchMusic(String metadataField, String query) {
         ArrayList<MediaMetadata> result = new ArrayList<>();
         query = query.toLowerCase(Locale.US);
-        for (MediaMetadata track : mMusicListById.values()) {
+        for (MediaMetadata track : mMusicListByMediaId.values()) {
             if (track.getString(metadataField).toLowerCase(Locale.US)
                     .contains(query)) {
                 result.add(track);
@@ -188,8 +188,8 @@ public class LocalMusicProvider implements MusicProvider {
     }
 
     @Override
-    public MediaMetadata getMusic(String musicId) {
-        return mMusicListById.get(musicId);
+    public MediaMetadata getMusic(String mediaId) {
+        return mMusicListByMediaId.get(mediaId);
     }
 
     @Override
