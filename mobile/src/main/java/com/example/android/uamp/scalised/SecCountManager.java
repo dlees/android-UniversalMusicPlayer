@@ -62,6 +62,8 @@ class SecCount {
         // Get the directory for the user's public pictures directory.
         File file = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DOWNLOADS), fileName);
+        LogHelper.w("SEC_COUNT", Environment.DIRECTORY_DOWNLOADS + " secCount.txt");
+
         return file;
     }
 
@@ -82,11 +84,13 @@ class SecCount {
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
-            LogHelper.e("SEC_COUNT", "******* File not found. Did you" +
+            LogHelper.e("SEC_COUNT", Environment.DIRECTORY_DOWNLOADS + " secCount.txt File not found. Did you" +
                     " add a WRITE_EXTERNAL_STORAGE permission to the manifest?");
+            throw new RuntimeException(e);
 
         } catch (IOException e) {
             e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
     }
