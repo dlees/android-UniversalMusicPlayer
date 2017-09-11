@@ -86,7 +86,10 @@ public class TextFilePlaylistLoader implements PlaylistLoader {
 
         List<MediaMetadata> metadataList = new ArrayList<>();
         for (String mediaId: mediaIds) {
-            LogHelper.d("PLAYLIST_LOADER", "Looking for song:" + mediaId);
+            if (musicProvider.getMusic(mediaId) == null) {
+                continue;
+            }
+
             metadataList.add(musicProvider.getMusic(mediaId));
         }
         return metadataList;
